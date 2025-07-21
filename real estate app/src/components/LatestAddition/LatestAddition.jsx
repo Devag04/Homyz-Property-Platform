@@ -1,14 +1,15 @@
 "use client"
+
 import { useState, useEffect, useRef, useCallback } from "react"
 import PropertyDetailsModal from "../PropertyDetailsModal/PropertyDetailsModal.jsx"
-import { addFavorite, getFavorites } from "../../app/lib/favorites.js" // Updated import path
-import { Bed, Bath, Heart } from "lucide-react" // Lucide React icons are framework-agnostic
+import { addFavorite, getFavorites } from "../../lib/favorites.js"
 
 function LatestAddition({ updateCartCount }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [currentFavoritedIds, setCurrentFavoritedIds] = useState(new Set())
+
   const autoPlayIntervalRef = useRef(null)
   const carouselContainerRef = useRef(null)
   const carouselTrackRef = useRef(null) // Ref for the inner div that moves
@@ -16,7 +17,7 @@ function LatestAddition({ updateCartCount }) {
   const latestProperties = [
     {
       id: 1,
-      image: "/placeholder.svg?height=400&width=600",
+      image: "/i1.jpeg",
       title: "Contemporary Villa in South Delhi",
       price: "25,00,00,000",
       beds: 4,
@@ -32,7 +33,7 @@ function LatestAddition({ updateCartCount }) {
     },
     {
       id: 2,
-      image: "/placeholder.svg?height=400&width=600",
+      image: "/i2.jpeg",
       title: "High-Rise Apartment in Gurugram",
       price: "8,50,00,000",
       beds: 2,
@@ -48,7 +49,7 @@ function LatestAddition({ updateCartCount }) {
     },
     {
       id: 3,
-      image: "/placeholder.svg?height=400&width=600",
+      image: "/i3.jpeg",
       title: "Family Home in Noida Extension",
       price: "6,50,00,000",
       beds: 3,
@@ -64,7 +65,7 @@ function LatestAddition({ updateCartCount }) {
     },
     {
       id: 4,
-      image: "/placeholder.svg?height=400&width=600",
+      image: "/i4.jpeg",
       title: "Luxury Condo in DLF Cybercity",
       price: "12,00,00,000",
       beds: 3,
@@ -80,7 +81,7 @@ function LatestAddition({ updateCartCount }) {
     },
     {
       id: 5,
-      image: "/placeholder.svg?height=400&width=600",
+      image: "/i6.jpeg",
       title: "Cozy Farmhouse in Chattarpur",
       price: "4,50,00,000",
       beds: 2,
@@ -96,7 +97,7 @@ function LatestAddition({ updateCartCount }) {
     },
     {
       id: 6,
-      image: "/placeholder.svg?height=400&width=600",
+      image: "/i7.jpeg",
       title: "Designer Loft in Hauz Khas",
       price: "7,50,00,000",
       beds: 2,
@@ -124,29 +125,18 @@ function LatestAddition({ updateCartCount }) {
 
   const getCurrentSlidesToShow = useCallback(() => {
     if (typeof window === "undefined") return 3 // Fallback for server-side
-    return window.innerWidth >= 720 ? 3 : window.innerWidth >= 480 ? 2 : 1
+    return window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1
   }, [])
 
   const getMoveAmount = useCallback(() => {
-    if (
-      typeof window === "undefined" ||
-      !carouselContainerRef.current ||
-      !carouselTrackRef.current ||
-      carouselTrackRef.current.children.length === 0
-    ) {
-      return 0
-    }
-    const slidesToShow = getCurrentSlidesToShow()
+    if (typeof window === "undefined" || !carouselContainerRef.current) return 0
     const containerWidth = carouselContainerRef.current.offsetWidth
+    const slidesToShow = getCurrentSlidesToShow()
 
     if (slidesToShow === 1) {
-      // On mobile, each slide should take the full container width.
-      // The move amount is the container width plus the gap.
-      return containerWidth + GAP_WIDTH
+      return containerWidth
     } else {
-      // For multiple slides, calculate the width of one slide including its share of the gap.
-      const slideWidthWithoutGap = (containerWidth - (slidesToShow - 1) * GAP_WIDTH) / slidesToShow
-      return slideWidthWithoutGap + GAP_WIDTH
+      return (containerWidth - (slidesToShow - 1) * GAP_WIDTH) / slidesToShow + GAP_WIDTH
     }
   }, [getCurrentSlidesToShow])
 
@@ -159,16 +149,17 @@ function LatestAddition({ updateCartCount }) {
   const nextSlide = useCallback(() => {
     const totalSlides = latestProperties.length
     const slidesToShow = getCurrentSlidesToShow()
-    // Calculate the maximum index the carousel can scroll to while keeping enough items visible
-    const maxSlideIndex = Math.max(0, totalSlides - slidesToShow)
-    setCurrentSlideIndex((prevIndex) => (prevIndex >= maxSlideIndex ? 0 : prevIndex + 1))
+    const maxSlide = Math.max(0, totalSlides - slidesToShow) // Ensure maxSlide is not negative
+
+    setCurrentSlideIndex((prevIndex) => (prevIndex >= maxSlide ? 0 : prevIndex + 1))
   }, [latestProperties.length, getCurrentSlidesToShow])
 
   const prevSlide = useCallback(() => {
     const totalSlides = latestProperties.length
     const slidesToShow = getCurrentSlidesToShow()
-    const maxSlideIndex = Math.max(0, totalSlides - slidesToShow)
-    setCurrentSlideIndex((prevIndex) => (prevIndex <= 0 ? maxSlideIndex : prevIndex - 1))
+    const maxSlide = Math.max(0, totalSlides - slidesToShow)
+
+    setCurrentSlideIndex((prevIndex) => (prevIndex <= 0 ? maxSlide : prevIndex - 1))
   }, [latestProperties.length, getCurrentSlidesToShow])
 
   const goToSlide = useCallback((slideIndex) => {
@@ -191,15 +182,13 @@ function LatestAddition({ updateCartCount }) {
 
   const handleResize = useCallback(() => {
     setCurrentSlideIndex(0) // Reset current slide to 0 on resize
-    // Re-apply transform immediately after resize to prevent visual glitches
-    // This will be triggered by the useEffect that depends on currentSlideIndex
   }, [])
 
   const startAutoPlay = useCallback(() => {
     if (typeof window === "undefined") return null
     return setInterval(() => {
       nextSlide()
-    }, 10000)
+    }, 4000)
   }, [nextSlide])
 
   const stopAutoPlay = useCallback(() => {
@@ -221,6 +210,7 @@ function LatestAddition({ updateCartCount }) {
     // Initial setup
     applyTransform()
     updateDots()
+
     stopAutoPlay()
     autoPlayIntervalRef.current = startAutoPlay()
 
@@ -229,6 +219,7 @@ function LatestAddition({ updateCartCount }) {
       carouselContainer.addEventListener("mouseenter", stopAutoPlay)
       carouselContainer.addEventListener("mouseleave", startAutoPlay)
     }
+
     window.addEventListener("resize", handleResize)
 
     return () => {
@@ -239,7 +230,7 @@ function LatestAddition({ updateCartCount }) {
       window.removeEventListener("resize", handleResize)
       stopAutoPlay()
     }
-  }, [applyTransform, updateDots, startAutoPlay, stopAutoPlay, handleResize])
+  }, [applyTransform, updateDots, startAutoPlay, stopAutoPlay, handleResize]) // Dependencies for initial setup and cleanup
 
   const handleViewDetails = (property) => {
     setSelectedProperty(property)
@@ -289,6 +280,7 @@ function LatestAddition({ updateCartCount }) {
             Check out our newest property listings that just hit the market
           </p>
         </div>
+
         <div id="carousel-container" ref={carouselContainerRef} className="relative">
           <div className="overflow-hidden rounded-lg">
             <div
@@ -304,7 +296,7 @@ function LatestAddition({ updateCartCount }) {
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition duration-300 h-full">
                     <div className="relative">
                       <img
-                        src={property.image || "/placeholder.svg?height=400&width=600"}
+                        src={property.image || "/placeholder.svg"}
                         alt={property.title}
                         className="w-full h-64 object-cover"
                       />
@@ -317,11 +309,19 @@ function LatestAddition({ updateCartCount }) {
                       <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">₹{property.price}</p>
                       <div className="flex justify-between text-gray-600 dark:text-gray-300 mb-4">
                         <span className="flex items-center">
-                          <Bed className="w-4 h-4 mr-1" /> {/* Lucide Bed icon */}
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                          </svg>
                           {property.beds} beds
                         </span>
                         <span className="flex items-center">
-                          <Bath className="w-4 h-4 mr-1" /> {/* Lucide Bath icon */}
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                              clipRule="evenodd"
+                            ></path>
+                          </svg>
                           {property.baths} baths
                         </span>
                         <span>{property.sqft} sqft</span>
@@ -336,13 +336,8 @@ function LatestAddition({ updateCartCount }) {
                         </button>
                         <button
                           onClick={() => handleAddToFavorites(property)}
-                          className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition duration-300 flex items-center justify-center"
+                          className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition duration-300"
                         >
-                          <Heart
-                            className={`w-4 h-4 mr-2 ${
-                              currentFavoritedIds.has(property.id) ? "fill-blue-600 text-blue-600" : "text-blue-600"
-                            }`}
-                          />
                           Add to Favorites
                         </button>
                       </div>
@@ -352,6 +347,7 @@ function LatestAddition({ updateCartCount }) {
               ))}
             </div>
           </div>
+
           <button
             onClick={prevSlide}
             className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 bg-opacity-90 hover:bg-opacity-100 text-gray-800 dark:text-gray-100 p-3 rounded-full shadow-lg transition duration-300 z-10"
@@ -368,6 +364,7 @@ function LatestAddition({ updateCartCount }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+
           <div className="flex justify-center mt-8 space-x-2">
             {Array.from({ length: getMaxDots() }, (_, index) => (
               <button
@@ -380,6 +377,7 @@ function LatestAddition({ updateCartCount }) {
             ))}
           </div>
         </div>
+
         <div className="text-center mt-8">
           <button
             onClick={() => {
